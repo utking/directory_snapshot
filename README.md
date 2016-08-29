@@ -1,5 +1,5 @@
 ### directory_snapshot
-Script for traversing a directory and write its content into a 'dir.lst' file (for NodeJS)
+Script traversing a directory and writing its content into a 'dir.lst' file
 
 Usage: node index.js <directory_path>
 
