@@ -10,12 +10,6 @@ const isDirectory = require('is-directory');
 
 const listFileName = 'dir.lst';
 
-var _rootDirPath = process.argv[2];
-if (!_rootDirPath) {
-	console.error('Missing argument.');
-	console.info(`Usage: ${process.argv[0]} ${process.argv[1]} <directory path>`);
-}
-
 var _printError = function (dirPath, err) {
 	if (err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
 		console.log(`${dirPath}: Permission denied`);
@@ -59,12 +53,19 @@ var _processDirectory = function (dirPath) {
 	});
 }
 
-fs.stat(_rootDirPath, function(err, stats) {
-	if (!stats || !stats.isDirectory()) {
-		console.error('<directory path> has to point to a valid directory');
-	} else {
-		_processDirectory(_rootDirPath);
-	}
-});
+
+var _rootDirPath = process.argv[2];
+if (!_rootDirPath) {
+	console.error('Missing argument.');
+	console.info(`Usage: ${process.argv[0]} ${process.argv[1]} <directory path>`);
+} else {
+	fs.stat(_rootDirPath, function(err, stats) {
+		if (!stats || !stats.isDirectory()) {
+			console.error('<directory path> has to point to a valid directory');
+		} else {
+			_processDirectory(_rootDirPath);
+		}
+	});
+}
 
 
