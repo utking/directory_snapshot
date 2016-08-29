@@ -47,8 +47,6 @@ var _processDirectory = function (dirPath) {
 					return `X:${f}`;
 				}
 			}).filter(f => { return f; }).sort();
-			console.info(`Directory '${dirPath}' is done!`);
-			return;
 			fs.writeFile(`${dirPath}/${listFileName}`, filesList.join('\n'), 
 					function (err) {
 						if (err) {
