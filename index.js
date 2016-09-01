@@ -5,10 +5,13 @@
  */
 
 const fs = require('fs');
+const program = require('commander');
 const path = require('path');
 const isDirectory = require('is-directory');
 
-const listFileName = 'dir.lst';
+var listFileName = 'dir.lst';
+var filePrefix = 'F';
+var dirPrefix = 'D';
 
 var _printError = function (dirPath, err) {
 	if (err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
@@ -51,13 +54,32 @@ var _processDirectory = function (dirPath) {
 					});
 		}
 	});
+};
+
+function setFilePrefix (val) {
+	filePrefix = val || filePrefix;
 }
 
+function setDirPrefix (val) {
+	dirPrefix = val || dirPrefix;
+}
+
+function setListingName (val) {
+	listFileName = val || listFileName;
+}
+
+program
+	.version('1.0.1')
+	.usage('[options] <directory_path>')
+	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
+	.option('-s, --single-listing', 'Create only one cumulative listing file')
+	.option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
+	.option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
+	.parse(process.argv);
 
 var _rootDirPath = process.argv[2];
 if (!_rootDirPath) {
 	console.error('Missing argument.');
-	console.info(`Usage: ${process.argv[0]} ${process.argv[1]} <directory path>`);
 } else {
 	fs.stat(_rootDirPath, function(err, stats) {
 		if (!stats || !stats.isDirectory()) {

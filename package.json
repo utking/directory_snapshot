@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "creates a listing file for a given directory",
   "main": "index.js",
-	"repository": "https://github.com/utking/directory_snapshot.git",
+  "repository": "https://github.com/utking/directory_snapshot.git",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,5 +14,8 @@
   "license": "ISC",
   "dependencies": {
     "is-directory": "^0.3.1"
+  },
+  "devDependencies": {
+    "commander": "^2.9.0"
   }
 }
