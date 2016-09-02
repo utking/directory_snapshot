@@ -12,6 +12,7 @@ const isDirectory = require('is-directory');
 var listFileName = 'dir.lst';
 var filePrefix = 'F';
 var dirPrefix = 'D';
+var otherPrefix = 'X';
 
 var _printError = function (dirPath, err) {
 	if (err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
@@ -27,6 +28,7 @@ var _processDirectory = function (dirPath) {
 			_printError(dirPath, err);
 		} else {
 			var filesList = files.map((f) => {
+				// Skip listings and hidden files
 				if (f === listFileName || f[0] === '.') {
 					return null;
 				}
@@ -39,9 +41,9 @@ var _processDirectory = function (dirPath) {
 				});
 				try {
 					return isDirectory.sync(`${dirPath}/${f}`) ? 
-						`D:${f}` : `F:${f}`;
+						`${dirPrefix}:${f}` : `${filePrefix}:${f}`;
 				} catch (ex) {
-					return `X:${f}`;
+					return `${otherPrefix}:${f}`;
 				}
 			}).filter(f => { return f; }).sort();
 			fs.writeFile(`${dirPath}/${listFileName}`, filesList.join('\n'), 
@@ -69,7 +71,7 @@ function setListingName (val) {
 }
 
 program
-	.version('1.0.1')
+	.version('1.0.2')
 	.usage('[options] <directory_path>')
 	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 	.option('-s, --single-listing', 'Create only one cumulative listing file')
@@ -79,7 +81,7 @@ program
 
 var _rootDirPath = process.argv[2];
 if (!_rootDirPath) {
-	console.error('Missing argument.');
+	console.error('Missing argument');
 } else {
 	fs.stat(_rootDirPath, function(err, stats) {
 		if (!stats || !stats.isDirectory()) {
