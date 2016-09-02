@@ -59,11 +59,11 @@ var _processDirectory = function (dirPath) {
 };
 
 function setFilePrefix (val) {
-	filePrefix = val || filePrefix;
+	filePrefix = val ? val.toString[0] : filePrefix;
 }
 
 function setDirPrefix (val) {
-	dirPrefix = val || dirPrefix;
+	dirPrefix = val ? val.toString()[0] : dirPrefix;
 }
 
 function setListingName (val) {
