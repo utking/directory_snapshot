@@ -95,7 +95,7 @@ if (!_rootDirPath) {
 			console.error('<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
-			fs.writeFile(path.join('.', listFileName), cumulativeListing, 
+			fs.writeFile(path.join('.', listFileName), JSON.stringify(cumulativeListing), 
 					function (err) {
 						if (err) {
 							_printError(dirPath, err);
