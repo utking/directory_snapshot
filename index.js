@@ -15,8 +15,11 @@ var dirPrefix = 'D';
 var otherPrefix = 'X';
 var cumulativeListing = {};
 
-var _printError = function (dirPath, err) {
-	if (err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
+var _printMessage = function (dirPath, err) {
+	if (program.quite) {
+		return;
+	}
+	if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
 		console.log(`${dirPath}: Permission denied`);
 	} else {
 		console.log(err);
@@ -56,9 +59,9 @@ var _processDirectory = function (dirPath) {
 			fs.writeFile(`${dirPath}/${listFileName}`, filesList.join('\n'), 
 					function (err) {
 						if (err) {
-							_printError(dirPath, err);
+							_printMessage(dirPath, err);
 						} else {
-							console.info(`Directory '${dirPath}' is done!`);
+							_printMessage(null, `Directory '${dirPath}' is done!`);
 						}
 					});
 		}
@@ -82,25 +85,26 @@ program
 	.usage('[options] <directory_path>')
 	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 	.option('-s, --single-listing', 'Create only one cumulative listing file')
+	.option('-q, --quite', 'Quite mode')
 	.option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
 	.option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
 	.parse(process.argv);
 
 var _rootDirPath = process.argv[2];
 if (!_rootDirPath) {
-	console.error('Missing argument');
+	_printMessage(null, 'Missing argument');
 } else {
 	fs.stat(_rootDirPath, function(err, stats) {
 		if (!stats || !stats.isDirectory()) {
-			console.error('<directory path> has to point to a valid directory');
+			_printMessage(null, '<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
 			fs.writeFile(path.join('.', listFileName), JSON.stringify(cumulativeListing, null, 2), 
 					function (err) {
 						if (err) {
-							_printError(dirPath, err);
+							_printMessage(dirPath, err);
 						} else {
-							console.info(`Single listing is done!`);
+							_printMessage(null, 'Single listing is done!');
 						}
 					});
 		}
