@@ -13,6 +13,7 @@ var listFileName = 'dir.lst';
 var filePrefix = 'F';
 var dirPrefix = 'D';
 var otherPrefix = 'X';
+var cumulativeListing = {};
 
 var _printError = function (dirPath, err) {
 	if (err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
@@ -23,29 +24,35 @@ var _printError = function (dirPath, err) {
 };
 
 var _processDirectory = function (dirPath) {
-	fs.readdir(dirPath, function (err, files) {
-		if (err) {
-			_printError(dirPath, err);
+	var files = [];
+	try {
+		files = fs.readdirSync(dirPath);
+	} catch (ex) {
+		files = [];
+	}
+	if (files) {
+		var filesList = files.map((f) => {
+			// Skip listings and hidden files
+			if (f === listFileName || f[0] === '.') {
+				return null;
+			}
+			var newPath = path.join(dirPath, f);
+			var isDir = false;
+			try {
+				isDir = isDirectory.sync(newPath);
+			} catch (ex) { }
+			if (isDir) {
+				_processDirectory(newPath);
+			}
+			try {
+				return isDir ? `${dirPrefix}:${f}` : `${filePrefix}:${f}`;
+			} catch (ex) {
+				return `${otherPrefix}:${f}`;
+			}
+		}).filter(f => { return f; }).sort();
+		if (program.singleListing) {
+			cumulativeListing[dirPath] = filesList;
 		} else {
-			var filesList = files.map((f) => {
-				// Skip listings and hidden files
-				if (f === listFileName || f[0] === '.') {
-					return null;
-				}
-				isDirectory(`${dirPath}/${f}`, function (err, dir) {
-					if (err) {
-						_printError(dirPath, err);
-					} else if (dir) {
-						_processDirectory(path.join(dirPath, f));
-					}
-				});
-				try {
-					return isDirectory.sync(`${dirPath}/${f}`) ? 
-						`${dirPrefix}:${f}` : `${filePrefix}:${f}`;
-				} catch (ex) {
-					return `${otherPrefix}:${f}`;
-				}
-			}).filter(f => { return f; }).sort();
 			fs.writeFile(`${dirPath}/${listFileName}`, filesList.join('\n'), 
 					function (err) {
 						if (err) {
@@ -55,7 +62,7 @@ var _processDirectory = function (dirPath) {
 						}
 					});
 		}
-	});
+	}
 };
 
 function setFilePrefix (val) {
@@ -88,6 +95,14 @@ if (!_rootDirPath) {
 			console.error('<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
+			fs.writeFile(path.join('.', listFileName), cumulativeListing, 
+					function (err) {
+						if (err) {
+							_printError(dirPath, err);
+						} else {
+							console.info(`Single listing is done!`);
+						}
+					});
 		}
 	});
 }
