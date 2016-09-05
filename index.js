@@ -99,10 +99,10 @@ if (!_rootDirPath) {
 			_printMessage(null, '<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
-			fs.writeFile(path.join('.', listFileName), JSON.stringify(cumulativeListing, null, 2), 
+			fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, 2), 
 					function (err) {
 						if (err) {
-							_printMessage(dirPath, err);
+							_printMessage(_rootDirPath, err);
 						} else {
 							_printMessage(null, 'Single listing is done!');
 						}
