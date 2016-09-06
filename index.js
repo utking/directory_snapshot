@@ -16,7 +16,7 @@ var otherPrefix = 'X';
 var cumulativeListing = {};
 
 var _printMessage = function (dirPath, err) {
-	if (program.quite) {
+	if (program.quiet) {
 		return;
 	}
 	if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
@@ -85,7 +85,7 @@ program
 	.usage('[options] <directory_path>')
 	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 	.option('-s, --single-listing', 'Create only one cumulative listing file')
-	.option('-q, --quite', 'Quite mode')
+	.option('-q, --quiet', 'Quiet mode')
 	.option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
 	.option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
 	.parse(process.argv);
