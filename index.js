@@ -10,6 +10,7 @@ const path = require('path');
 const isDirectory = require('is-directory');
 
 var listFileName = 'dir.lst';
+var listingRegex = new RegExp(listFileName);
 var filePrefix = 'F';
 var dirPrefix = 'D';
 var otherPrefix = 'X';
@@ -36,7 +37,7 @@ var _processDirectory = function (dirPath) {
 	if (files) {
 		var filesList = files.map((f) => {
 			// Skip listings and hidden files
-			if (f === listFileName || f[0] === '.') {
+			if (listingRegex.test(f) || f[0] === '.') {
 				return null;
 			}
 			var newPath = path.join(dirPath, f);
@@ -52,7 +53,7 @@ var _processDirectory = function (dirPath) {
 			} catch (ex) {
 				return `${otherPrefix}:${f}`;
 			}
-		}).filter(f => { return f; }).sort();
+		}).filter((f) => { return f && f.length; }).sort();
 		if (program.singleListing) {
 			cumulativeListing[dirPath] = filesList;
 		} else {
