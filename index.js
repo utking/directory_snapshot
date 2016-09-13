@@ -87,6 +87,7 @@ program
 	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 	.option('-s, --single-listing', 'Create only one cumulative listing file')
 	.option('-q, --quiet', 'Quiet mode')
+	.option('-p, --pretty-output', 'Pretty JOSN output for listings')
 	.option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
 	.option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
 	.parse(process.argv);
@@ -100,7 +101,11 @@ if (!_rootDirPath) {
 			_printMessage(null, '<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
-			fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, 2), 
+			var tabWidth = null;
+			if (program.prettyOutput) {
+				tabWidth = 2;
+			}
+			fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, tabWidth), 
 					function (err) {
 						if (err) {
 							_printMessage(_rootDirPath, err);
