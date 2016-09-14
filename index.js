@@ -9,6 +9,7 @@ const program = require('commander');
 const path = require('path');
 const isDirectory = require('is-directory');
 
+var compareMode = false;
 var listFileName = 'dir.lst';
 var listingRegex = new RegExp(listFileName);
 var filePrefix = 'F';
@@ -69,21 +70,81 @@ var _processDirectory = function (dirPath) {
 	}
 };
 
-function setFilePrefix (val) {
+var setFilePrefix = function (val) {
 	filePrefix = val ? val.toString[0] : filePrefix;
-}
+};
 
-function setDirPrefix (val) {
+var setDirPrefix = function (val) {
 	dirPrefix = val ? val.toString()[0] : dirPrefix;
-}
+};
 
-function setListingName (val) {
+var setListingName = function (val) {
 	listFileName = val || listFileName;
-}
+};
+
+var _findDirectoriesDiff = function (prevList, curList) {
+	var dirDiff = [];
+	var fileDiff = {};
+	Object.keys(prevList).forEach((p) => {
+		if (!curList[p]) {
+			dirDiff.push(' --- ' + p);
+		} else {
+		fileDiff[p] = _findFilesDiff(prevList[p], curList[p]);
+		}
+	});
+	Object.keys(curList).forEach((p) => {
+		if (!prevList[p]) {
+			dirDiff.push(' +++ ' + p);
+		}
+	});
+	return {dirDiff, fileDiff};
+};
+
+var _findFilesDiff = function (dirPrevList, dirCurList) {
+	var result = [];
+	dirPrevList.forEach((p) => {
+		if (dirCurList.find((i) => { return i === p; }) === undefined) {
+			result.push(' --- ' + p);
+		}
+	});
+	dirCurList.forEach((c) => {
+		if (dirPrevList.find((i) => { return i === c; }) === undefined) {
+			result.push(' +++ ' + c);
+		}
+	});
+	return result;
+};
+
+var compareListings = function (prevList, curList) {
+	return _findDirectoriesDiff(prevList, curList);
+};
+
+function readPrevList(fileName) {
+	return new Promise(function(resolve, reject) {
+		if (!fileName) {
+			reject(Error('Filename should not be empty'));
+			return;
+		}
+		fs.stat(fileName, function(err, stats) {
+			if (!stats || !stats.isFile()) {
+				reject(Error(`File ${fileName} does not exist or is not a listing file`));
+				return;
+			}
+			var result = {};
+			try {
+				result = fs.readFileSync(fileName);
+				resolve(JSON.parse(result));
+			} catch (e) {
+				reject (e);
+			}
+		});
+	});
+};
 
 program
 	.version('1.0.2')
 	.usage('[options] <directory_path>')
+	.option('-c, --compare', 'Compare with the previous state')
 	.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 	.option('-s, --single-listing', 'Create only one cumulative listing file')
 	.option('-q, --quiet', 'Quiet mode')
@@ -93,6 +154,7 @@ program
 	.parse(process.argv);
 
 var _rootDirPath = process.argv[2];
+compareMode = (program.compare ? true : false);
 if (!_rootDirPath) {
 	_printMessage(null, 'Missing argument');
 } else {
@@ -105,14 +167,26 @@ if (!_rootDirPath) {
 			if (program.prettyOutput) {
 				tabWidth = 2;
 			}
-			fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, tabWidth), 
-					function (err) {
-						if (err) {
-							_printMessage(_rootDirPath, err);
-						} else {
-							_printMessage(null, 'Single listing is done!');
-						}
-					});
+			if (program.singleListing) {
+				if (compareMode) {
+					readPrevList(listFileName)
+						.then(function (prevList) {
+						console.log(
+							JSON.stringify(compareListings(prevList, cumulativeListing),
+								null, 2));
+					})
+						.catch(console.log);
+				} else {
+					fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, tabWidth), 
+						function (err) {
+							if (err) {
+								_printMessage(_rootDirPath, err);
+							} else {
+								_printMessage(null, 'Single listing is done!');
+							}
+						});
+				}
+			}
 		}
 	});
 }
