@@ -89,7 +89,10 @@ var _findDirectoriesDiff = function (prevList, curList) {
 		if (!curList[p]) {
 			dirDiff.push(' --- ' + p);
 		} else {
-		fileDiff[p] = _findFilesDiff(prevList[p], curList[p]);
+			var result = _findFilesDiff(prevList[p], curList[p]);
+			if (result.length) {
+				fileDiff[p] = result;
+			}
 		}
 	});
 	Object.keys(curList).forEach((p) => {
