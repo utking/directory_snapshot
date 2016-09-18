@@ -1,6 +1,6 @@
 # directory_snapshot
 
-Script traversing a directory and writing its content into a 'dir.lst' file. Using recursion, creates a dir.lst file in a specified directory and each subdirectory in it.
+Script traversing a directory and writing its content into a listing file. Using recursion, creates a listing file in a specified directory and each subdirectory in it.
 
 ## Requirements
 
