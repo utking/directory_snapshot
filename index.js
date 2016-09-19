@@ -16,6 +16,7 @@ var filePrefix = 'F';
 var dirPrefix = 'D';
 var otherPrefix = 'X';
 var cumulativeListing = {};
+var tabWidth = null;
 
 var _printMessage = function (dirPath, err) {
 	if (program.quiet) {
@@ -35,7 +36,7 @@ var _processDirectory = function (dirPath) {
 	} catch (ex) {
 		files = [];
 	}
-	if (files) {
+	if (files.length) {
 		var filesList = files.map((f) => {
 			// Skip listings and hidden files
 			if (listingRegex.test(f) || f[0] === '.') {
@@ -58,7 +59,19 @@ var _processDirectory = function (dirPath) {
 		if (program.singleListing) {
 			cumulativeListing[dirPath] = filesList;
 		} else {
-			fs.writeFile(`${dirPath}/${listFileName}`, filesList.join('\n'), 
+			var curListingObject = {};
+			curListingObject[dirPath] = filesList;
+			if (compareMode) {
+				readPrevList(path.join(dirPath, listFileName))
+					.then(function (prevList) {
+						var result = compareListings(prevList, curListingObject);
+						if (result.fileDiff && result.fileDiff[dirPath]) {
+							console.log(result.fileDiff);
+						}
+					})
+					.catch(console.log);
+			} else {
+				fs.writeFile(`${dirPath}/${listFileName}`, JSON.stringify(curListingObject, null, tabWidth),
 					function (err) {
 						if (err) {
 							_printMessage(dirPath, err);
@@ -66,6 +79,7 @@ var _processDirectory = function (dirPath) {
 							_printMessage(null, `Directory '${dirPath}' is done!`);
 						}
 					});
+			}
 		}
 	}
 };
@@ -166,7 +180,6 @@ if (!_rootDirPath) {
 			_printMessage(null, '<directory path> has to point to a valid directory');
 		} else {
 			_processDirectory(_rootDirPath);
-			var tabWidth = null;
 			if (program.prettyOutput) {
 				tabWidth = 2;
 			}
