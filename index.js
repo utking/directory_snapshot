@@ -17,6 +17,7 @@ var dirPrefix = 'D';
 var otherPrefix = 'X';
 var cumulativeListing = {};
 var tabWidth = null;
+var singleListing = true;
 
 var _printMessage = function (dirPath, err) {
   if (program.quiet) {
@@ -56,7 +57,7 @@ var _processDirectory = function (dirPath) {
         return `${otherPrefix}:${f}`;
       }
     }).filter((f) => { return f && f.length; }).sort();
-    if (program.singleListing) {
+    if (singleListing) {
       cumulativeListing[dirPath] = filesList;
     } else {
       var curListingObject = {};
@@ -163,7 +164,7 @@ program
 .usage('[options] <directory_path>')
 .option('-c, --compare', 'Compare with the previous state')
 .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
-.option('-s, --single-listing', 'Create only one cumulative listing file')
+.option('-s, --separate-listings', 'Create a listing file for each directory')
 .option('-q, --quiet', 'Quiet mode')
 .option('-p, --pretty-output', 'Pretty JOSN output for listings')
 .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
@@ -172,6 +173,8 @@ program
 
 var _rootDirPath = process.argv[2];
 compareMode = (program.compare ? true : false);
+singleListing = (program.separateListings ? false : true);
+
 if (!_rootDirPath) {
   _printMessage(null, 'Missing argument');
 } else {
@@ -183,7 +186,7 @@ if (!_rootDirPath) {
       if (program.prettyOutput) {
         tabWidth = 2;
       }
-      if (program.singleListing) {
+      if (singleListing) {
         if (compareMode) {
           readPrevList(listFileName)
             .then(function (prevList) {
