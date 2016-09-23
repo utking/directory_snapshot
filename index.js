@@ -161,7 +161,7 @@ function readPrevList(fileName) {
 
 program
 .version('1.0.2')
-.usage('[options] <directory_path>')
+.usage('<directory_path> [options]')
 .option('-c, --compare', 'Compare with the previous state')
 .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 .option('-s, --separate-listings', 'Create a listing file for each directory')
