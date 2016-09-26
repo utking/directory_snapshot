@@ -20,13 +20,12 @@ var tabWidth = null;
 var singleListing = true;
 
 var _printMessage = function (dirPath, err) {
-  if (program.quiet) {
-    return;
-  }
-  if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
-    console.log(`${dirPath}: Permission denied`);
-  } else {
-    console.log(err);
+  if (program.verbose) {
+    if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
+      console.log(`${dirPath}: Permission denied`);
+    } else {
+      console.log(err);
+    }
   }
 };
 
@@ -165,7 +164,7 @@ program
 .option('-c, --compare', 'Compare with the previous state')
 .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
 .option('-s, --separate-listings', 'Create a listing file for each directory')
-.option('-q, --quiet', 'Quiet mode')
+.option('-v, --verbose', 'Verbose mode')
 .option('-p, --pretty-output', 'Pretty JOSN output for listings')
 .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
 .option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
