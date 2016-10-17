@@ -17,15 +17,15 @@ var dirPrefix = 'D';
 var otherPrefix = 'X';
 var cumulativeListing = {};
 var tabWidth = null;
+var singleListing = true;
 
 var _printMessage = function (dirPath, err) {
-  if (program.quiet) {
-    return;
-  }
-  if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
-    console.log(`${dirPath}: Permission denied`);
-  } else {
-    console.log(err);
+  if (program.verbose) {
+    if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
+      console.log(`${dirPath}: Permission denied`);
+    } else {
+      console.log(err);
+    }
   }
 };
 
@@ -56,7 +56,7 @@ var _processDirectory = function (dirPath) {
         return `${otherPrefix}:${f}`;
       }
     }).filter((f) => { return f && f.length; }).sort();
-    if (program.singleListing) {
+    if (singleListing) {
       cumulativeListing[dirPath] = filesList;
     } else {
       var curListingObject = {};
@@ -160,11 +160,11 @@ function readPrevList(fileName) {
 
 program
 .version('1.0.2')
-.usage('[options] <directory_path>')
+.usage('<directory_path> [options]')
 .option('-c, --compare', 'Compare with the previous state')
 .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
-.option('-s, --single-listing', 'Create only one cumulative listing file')
-.option('-q, --quiet', 'Quiet mode')
+.option('-s, --separate-listings', 'Create a listing file for each directory')
+.option('-v, --verbose', 'Verbose mode')
 .option('-p, --pretty-output', 'Pretty JOSN output for listings')
 .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
 .option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
@@ -172,6 +172,8 @@ program
 
 var _rootDirPath = process.argv[2];
 compareMode = (program.compare ? true : false);
+singleListing = (program.separateListings ? false : true);
+
 if (!_rootDirPath) {
   _printMessage(null, 'Missing argument');
 } else {
@@ -183,7 +185,7 @@ if (!_rootDirPath) {
       if (program.prettyOutput) {
         tabWidth = 2;
       }
-      if (program.singleListing) {
+      if (singleListing) {
         if (compareMode) {
           readPrevList(listFileName)
             .then(function (prevList) {
