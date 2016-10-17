@@ -56,7 +56,9 @@ var _processDirectory = function (dirPath) {
         return `${otherPrefix}:${f}`;
       }
     }).filter((f) => { return f && f.length; }).sort();
-    if (program.separateListing) {
+    if (program.singleListing) {
+      cumulativeListing[dirPath] = filesList;
+    } else {
       var curListingObject = {};
       curListingObject[dirPath] = filesList;
       if (compareMode) {
@@ -78,8 +80,6 @@ var _processDirectory = function (dirPath) {
               }
             });
       }
-    } else {
-      cumulativeListing[dirPath] = filesList;
     }
   }
 };
@@ -163,7 +163,7 @@ program
 .usage('[options] <directory_path>')
 .option('-c, --compare', 'Compare with the previous state')
 .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
-.option('-s, --separate-listing', 'Create separate listing files')
+.option('-s, --single-listing', 'Create only one cumulative listing file')
 .option('-q, --quiet', 'Quiet mode')
 .option('-p, --pretty-output', 'Pretty JOSN output for listings')
 .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
@@ -183,7 +183,7 @@ if (!_rootDirPath) {
       if (program.prettyOutput) {
         tabWidth = 2;
       }
-      if (!program.separateListing) {
+      if (program.singleListing) {
         if (compareMode) {
           readPrevList(listFileName)
             .then(function (prevList) {
