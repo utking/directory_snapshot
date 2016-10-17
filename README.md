@@ -22,7 +22,10 @@ $ node index.js -h
 // create snapshot for a current directory
 $ node index.js ./
 
-// create snapshot for a current directory in a single-listing mode
+// compare a snapshot for a current directory with a previously create one
+$ node index.js ./ -c
+
+// create snapshot for a current directory in a separate-listing mode
 $ node index.js ./ -s
 
 ```
