@@ -8,42 +8,44 @@ const fs = require('fs');
 const program = require('commander');
 const path = require('path');
 const isDirectory = require('is-directory');
+const Console = require("console").Console;
+const Logger = new Console(process.stdout, process.stderr);
 
-var compareMode = false;
-var listFileName = 'dir.lst';
-var listingRegex = new RegExp(listFileName);
-var filePrefix = 'F';
-var dirPrefix = 'D';
-var otherPrefix = 'X';
-var cumulativeListing = {};
-var tabWidth = null;
-var singleListing = true;
+let compareMode = false;
+let listFileName = 'dir.lst';
+let listingRegex = new RegExp(listFileName);
+let filePrefix = 'F';
+let dirPrefix = 'D';
+let otherPrefix = 'X';
+let cumulativeListing = {};
+let tabWidth = null;
+let singleListing = true;
 
-var _printMessage = function (dirPath, err) {
+let _printMessage = (dirPath, err) => {
   if (program.verbose) {
     if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
-      console.log(`${dirPath}: Permission denied`);
+      Logger.log(`${dirPath}: Permission denied`);
     } else {
-      console.log(err);
+      Logger.log(err);
     }
   }
 };
 
-var _processDirectory = function (dirPath) {
-  var files = [];
+let _processDirectory = (dirPath) => {
+  let files = [];
   try {
     files = fs.readdirSync(dirPath);
   } catch (ex) {
     files = [];
   }
   if (files.length) {
-    var filesList = files.map((f) => {
+    let filesList = files.map((f) => {
       // Skip listings and hidden files
       if (listingRegex.test(f) || f[0] === '.') {
         return null;
       }
-      var newPath = path.join(dirPath, f);
-      var isDir = false;
+      let newPath = path.join(dirPath, f);
+      let isDir = false;
       try {
         isDir = isDirectory.sync(newPath);
       } catch (ex) { }
@@ -59,51 +61,51 @@ var _processDirectory = function (dirPath) {
     if (singleListing) {
       cumulativeListing[dirPath] = filesList;
     } else {
-      var curListingObject = {};
+      let curListingObject = {};
       curListingObject[dirPath] = filesList;
       if (compareMode) {
         readPrevList(path.join(dirPath, listFileName))
-          .then(function (prevList) {
-            var result = compareListings(prevList, curListingObject);
+          .then((prevList) => {
+            let result = compareListings(prevList, curListingObject);
             if (result.fileDiff && result.fileDiff[dirPath]) {
-              console.log(result.fileDiff);
+              Logger.log(result.fileDiff);
             }
           })
-        .catch(console.log);
+          .catch(Logger.log);
       } else {
         fs.writeFile(`${dirPath}/${listFileName}`, JSON.stringify(curListingObject, null, tabWidth),
-            function (err) {
-              if (err) {
-                _printMessage(dirPath, err);
-              } else {
-                _printMessage(null, `Directory '${dirPath}' is done!`);
-              }
-            });
+          (err) => {
+            if (err) {
+              _printMessage(dirPath, err);
+            } else {
+              _printMessage(null, `Directory '${dirPath}' is done!`);
+            }
+          });
       }
     }
   }
 };
 
-var setFilePrefix = function (val) {
+let setFilePrefix = (val) => {
   filePrefix = val ? val.toString[0] : filePrefix;
 };
 
-var setDirPrefix = function (val) {
+let setDirPrefix = (val) => {
   dirPrefix = val ? val.toString()[0] : dirPrefix;
 };
 
-var setListingName = function (val) {
+let setListingName = (val) => {
   listFileName = val || listFileName;
 };
 
-var _findDirectoriesDiff = function (prevList, curList) {
-  var dirDiff = [];
-  var fileDiff = {};
+let _findDirectoriesDiff = (prevList, curList) => {
+  let dirDiff = [];
+  let fileDiff = {};
   Object.keys(prevList).forEach((p) => {
     if (!curList[p]) {
       dirDiff.push(' --- ' + p);
     } else {
-      var result = _findFilesDiff(prevList[p], curList[p]);
+      let result = _findFilesDiff(prevList[p], curList[p]);
       if (result.length) {
         fileDiff[p] = result;
       }
@@ -117,8 +119,8 @@ var _findDirectoriesDiff = function (prevList, curList) {
   return {dirDiff, fileDiff};
 };
 
-var _findFilesDiff = function (dirPrevList, dirCurList) {
-  var result = [];
+let _findFilesDiff = (dirPrevList, dirCurList) => {
+  let result = [];
   dirPrevList.forEach((p) => {
     if (dirCurList.find((i) => { return i === p; }) === undefined) {
       result.push(' --- ' + p);
@@ -132,22 +134,22 @@ var _findFilesDiff = function (dirPrevList, dirCurList) {
   return result;
 };
 
-var compareListings = function (prevList, curList) {
+let compareListings = (prevList, curList) => {
   return _findDirectoriesDiff(prevList, curList);
 };
 
-function readPrevList(fileName) {
-  return new Promise(function(resolve, reject) {
+let readPrevList = (fileName) => {
+  return new Promise((resolve, reject) => {
     if (!fileName) {
       reject(Error('Filename should not be empty'));
       return;
     }
-    fs.stat(fileName, function(err, stats) {
+    fs.stat(fileName, (err, stats) => {
       if (!stats || !stats.isFile()) {
         reject(Error(`File ${fileName} does not exist or is not a listing file`));
         return;
       }
-      var result = {};
+      let result = {};
       try {
         result = fs.readFileSync(fileName);
         resolve(JSON.parse(result));
@@ -159,25 +161,25 @@ function readPrevList(fileName) {
 };
 
 program
-.version('1.0.2')
-.usage('<directory_path> [options]')
-.option('-c, --compare', 'Compare with the previous state')
-.option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
-.option('-s, --separate-listings', 'Create a listing file for each directory')
-.option('-v, --verbose', 'Verbose mode')
-.option('-p, --pretty-output', 'Pretty JOSN output for listings')
-.option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
-.option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
-.parse(process.argv);
+  .version('1.0.3')
+  .usage('<directory_path> [options]')
+  .option('-c, --compare', 'Compare with the previous state')
+  .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
+  .option('-s, --separate-listings', 'Create a listing file for each directory')
+  .option('-v, --verbose', 'Verbose mode')
+  .option('-p, --pretty-output', 'Pretty JOSN output for listings')
+  .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
+  .option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
+  .parse(process.argv);
 
-var _rootDirPath = process.argv[2];
+let _rootDirPath = process.argv[2];
 compareMode = (program.compare ? true : false);
 singleListing = (program.separateListings ? false : true);
 
 if (!_rootDirPath) {
   _printMessage(null, 'Missing argument');
 } else {
-  fs.stat(_rootDirPath, function(err, stats) {
+  fs.stat(_rootDirPath, (err, stats) => {
     if (!stats || !stats.isDirectory()) {
       _printMessage(null, '<directory path> has to point to a valid directory');
     } else {
@@ -188,21 +190,21 @@ if (!_rootDirPath) {
       if (singleListing) {
         if (compareMode) {
           readPrevList(listFileName)
-            .then(function (prevList) {
-              console.log(
-                  JSON.stringify(compareListings(prevList, cumulativeListing),
-                    null, 2));
+            .then((prevList) => {
+              Logger.log(
+                JSON.stringify(compareListings(prevList, cumulativeListing),
+                  null, 2));
             })
-          .catch(console.log);
+            .catch(Logger.log);
         } else {
           fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, tabWidth), 
-              function (err) {
-                if (err) {
-                  _printMessage(_rootDirPath, err);
-                } else {
-                  _printMessage(null, 'Single listing is done!');
-                }
-              });
+            (err) => {
+              if (err) {
+                _printMessage(_rootDirPath, err);
+              } else {
+                _printMessage(null, 'Single listing is done!');
+              }
+            });
         }
       }
     }
