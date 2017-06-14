@@ -4,26 +4,27 @@
  *
  */
 
-const fs = require('fs');
-const program = require('commander');
-const path = require('path');
-const isDirectory = require('is-directory');
+const fs = require("fs");
+const program = require("commander");
+const path = require("path");
+const isDirectory = require("is-directory");
 const Console = require("console").Console;
 const Logger = new Console(process.stdout, process.stderr);
+const Utils = require(__dirname+"/utils/directoryDiff");
 
 let compareMode = false;
-let listFileName = 'dir.lst';
+let listFileName = "dir.lst";
 let listingRegex = new RegExp(listFileName);
-let filePrefix = 'F';
-let dirPrefix = 'D';
-let otherPrefix = 'X';
+let filePrefix = "F";
+let dirPrefix = "D";
+let otherPrefix = "X";
 let cumulativeListing = {};
 let tabWidth = null;
 let singleListing = true;
 
 let _printMessage = (dirPath, err) => {
   if (program.verbose) {
-    if (err && err.code && (err.code === 'EPERM' || err.code === 'EACCES')) {
+    if (err && err.code && (err.code === "EPERM" || err.code === "EACCES")) {
       Logger.log(`${dirPath}: Permission denied`);
     } else {
       Logger.log(err);
@@ -41,7 +42,7 @@ let _processDirectory = (dirPath) => {
   if (files.length) {
     let filesList = files.map((f) => {
       // Skip listings and hidden files
-      if (listingRegex.test(f) || f[0] === '.') {
+      if (listingRegex.test(f) || f[0] === ".") {
         return null;
       }
       let newPath = path.join(dirPath, f);
@@ -78,7 +79,7 @@ let _processDirectory = (dirPath) => {
             if (err) {
               _printMessage(dirPath, err);
             } else {
-              _printMessage(null, `Directory '${dirPath}' is done!`);
+              _printMessage(null, `Directory "${dirPath}" is done!`);
             }
           });
       }
@@ -98,50 +99,14 @@ let setListingName = (val) => {
   listFileName = val || listFileName;
 };
 
-let _findDirectoriesDiff = (prevList, curList) => {
-  let dirDiff = [];
-  let fileDiff = {};
-  Object.keys(prevList).forEach((p) => {
-    if (!curList[p]) {
-      dirDiff.push(' --- ' + p);
-    } else {
-      let result = _findFilesDiff(prevList[p], curList[p]);
-      if (result.length) {
-        fileDiff[p] = result;
-      }
-    }
-  });
-  Object.keys(curList).forEach((p) => {
-    if (!prevList[p]) {
-      dirDiff.push(' +++ ' + p);
-    }
-  });
-  return {dirDiff, fileDiff};
-};
-
-let _findFilesDiff = (dirPrevList, dirCurList) => {
-  let result = [];
-  dirPrevList.forEach((p) => {
-    if (dirCurList.find((i) => { return i === p; }) === undefined) {
-      result.push(' --- ' + p);
-    }
-  });
-  dirCurList.forEach((c) => {
-    if (dirPrevList.find((i) => { return i === c; }) === undefined) {
-      result.push(' +++ ' + c);
-    }
-  });
-  return result;
-};
-
 let compareListings = (prevList, curList) => {
-  return _findDirectoriesDiff(prevList, curList);
+  return Utils.findDirectoriesDiff(prevList, curList);
 };
 
 let readPrevList = (fileName) => {
   return new Promise((resolve, reject) => {
     if (!fileName) {
-      reject(Error('Filename should not be empty'));
+      reject(Error("Filename should not be empty"));
       return;
     }
     fs.stat(fileName, (err, stats) => {
@@ -161,15 +126,15 @@ let readPrevList = (fileName) => {
 };
 
 program
-  .version('1.0.3')
-  .usage('<directory_path> [options]')
-  .option('-c, --compare', 'Compare with the previous state')
-  .option('-l, --listing-name <file_name>', 'Set a listing file name', setListingName)
-  .option('-s, --separate-listings', 'Create a listing file for each directory')
-  .option('-v, --verbose', 'Verbose mode')
-  .option('-p, --pretty-output', 'Pretty JOSN output for listings')
-  .option('-f, --file-prefix <prefix_letter>', 'Set a prifix letter for file entries', setFilePrefix)
-  .option('-d, --dir-prefix <prefix_letter>', 'Set a prifix letter for directory entries', setDirPrefix)
+  .version("1.0.3")
+  .usage("<directory_path> [options]")
+  .option("-c, --compare", "Compare with the previous state")
+  .option("-l, --listing-name <file_name>", "Set a listing file name", setListingName)
+  .option("-s, --separate-listings", "Create a listing file for each directory")
+  .option("-v, --verbose", "Verbose mode")
+  .option("-p, --pretty-output", "Pretty JOSN output for listings")
+  .option("-f, --file-prefix <prefix_letter>", "Set a prifix letter for file entries", setFilePrefix)
+  .option("-d, --dir-prefix <prefix_letter>", "Set a prifix letter for directory entries", setDirPrefix)
   .parse(process.argv);
 
 let _rootDirPath = process.argv[2];
@@ -177,11 +142,11 @@ compareMode = (program.compare ? true : false);
 singleListing = (program.separateListings ? false : true);
 
 if (!_rootDirPath) {
-  _printMessage(null, 'Missing argument');
+  _printMessage(null, "Missing argument");
 } else {
   fs.stat(_rootDirPath, (err, stats) => {
     if (!stats || !stats.isDirectory()) {
-      _printMessage(null, '<directory path> has to point to a valid directory');
+      _printMessage(null, "<directory path> has to point to a valid directory");
     } else {
       _processDirectory(_rootDirPath);
       if (program.prettyOutput) {
@@ -202,7 +167,7 @@ if (!_rootDirPath) {
               if (err) {
                 _printMessage(_rootDirPath, err);
               } else {
-                _printMessage(null, 'Single listing is done!');
+                _printMessage(null, "Single listing is done!");
               }
             });
         }
@@ -210,5 +175,4 @@ if (!_rootDirPath) {
     }
   });
 }
-
 
