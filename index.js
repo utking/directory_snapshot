@@ -11,6 +11,8 @@ const isDirectory = require("is-directory");
 const Console = require("console").Console;
 const Logger = new Console(process.stdout, process.stderr);
 const Utils = require(__dirname+"/utils/directoryDiff");
+const readPrevList = require(__dirname+"/utils/readPrevList");
+const TAB_WIDTH = 2;
 
 let compareMode = false;
 let listFileName = "dir.lst";
@@ -103,28 +105,6 @@ let compareListings = (prevList, curList) => {
   return Utils.findDirectoriesDiff(prevList, curList);
 };
 
-let readPrevList = (fileName) => {
-  return new Promise((resolve, reject) => {
-    if (!fileName) {
-      reject(Error("Filename should not be empty"));
-      return;
-    }
-    fs.stat(fileName, (err, stats) => {
-      if (!stats || !stats.isFile()) {
-        reject(Error(`File ${fileName} does not exist or is not a listing file`));
-        return;
-      }
-      let result = {};
-      try {
-        result = fs.readFileSync(fileName);
-        resolve(JSON.parse(result));
-      } catch (e) {
-        reject (e);
-      }
-    });
-  });
-};
-
 program
   .version("1.0.3")
   .usage("<directory_path> [options]")
@@ -150,7 +130,7 @@ if (!_rootDirPath) {
     } else {
       _processDirectory(_rootDirPath);
       if (program.prettyOutput) {
-        tabWidth = 2;
+        tabWidth = TAB_WIDTH;
       }
       if (singleListing) {
         if (compareMode) {
@@ -158,7 +138,7 @@ if (!_rootDirPath) {
             .then((prevList) => {
               Logger.log(
                 JSON.stringify(compareListings(prevList, cumulativeListing),
-                  null, 2));
+                  null, TAB_WIDTH));
             })
             .catch(Logger.log);
         } else {
