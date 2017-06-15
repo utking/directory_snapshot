@@ -8,86 +8,21 @@ const fs = require("fs");
 const program = require("commander");
 const path = require("path");
 const isDirectory = require("is-directory");
-const Console = require("console").Console;
-const Logger = new Console(process.stdout, process.stderr);
+const Logger = require(__dirname+"/utils/Logger");
+const DirProcessor = require(__dirname+"/utils/DirProcessor");
 const Utils = require(__dirname+"/utils/directoryDiff");
 const readPrevList = require(__dirname+"/utils/readPrevList");
+const Modes = require(__dirname+"/utils/modes");
 const TAB_WIDTH = 2;
 
-let compareMode = false;
 let listFileName = "dir.lst";
 let listingRegex = new RegExp(listFileName);
 let filePrefix = "F";
 let dirPrefix = "D";
 let otherPrefix = "X";
-let cumulativeListing = {};
 let tabWidth = null;
-let singleListing = true;
+let mode = Modes.CREATE_DEFAULT;
 
-let _printMessage = (dirPath, err) => {
-  if (program.verbose) {
-    if (err && err.code && (err.code === "EPERM" || err.code === "EACCES")) {
-      Logger.log(`${dirPath}: Permission denied`);
-    } else {
-      Logger.log(err);
-    }
-  }
-};
-
-let _processDirectory = (dirPath) => {
-  let files = [];
-  try {
-    files = fs.readdirSync(dirPath);
-  } catch (ex) {
-    files = [];
-  }
-  if (files.length) {
-    let filesList = files.map((f) => {
-      // Skip listings and hidden files
-      if (listingRegex.test(f) || f[0] === ".") {
-        return null;
-      }
-      let newPath = path.join(dirPath, f);
-      let isDir = false;
-      try {
-        isDir = isDirectory.sync(newPath);
-      } catch (ex) { }
-      if (isDir) {
-        _processDirectory(newPath);
-      }
-      try {
-        return isDir ? `${dirPrefix}:${f}` : `${filePrefix}:${f}`;
-      } catch (ex) {
-        return `${otherPrefix}:${f}`;
-      }
-    }).filter((f) => { return f && f.length; }).sort();
-    if (singleListing) {
-      cumulativeListing[dirPath] = filesList;
-    } else {
-      let curListingObject = {};
-      curListingObject[dirPath] = filesList;
-      if (compareMode) {
-        readPrevList(path.join(dirPath, listFileName))
-          .then((prevList) => {
-            let result = compareListings(prevList, curListingObject);
-            if (result.fileDiff && result.fileDiff[dirPath]) {
-              Logger.log(result.fileDiff);
-            }
-          })
-          .catch(Logger.log);
-      } else {
-        fs.writeFile(`${dirPath}/${listFileName}`, JSON.stringify(curListingObject, null, tabWidth),
-          (err) => {
-            if (err) {
-              _printMessage(dirPath, err);
-            } else {
-              _printMessage(null, `Directory "${dirPath}" is done!`);
-            }
-          });
-      }
-    }
-  }
-};
 
 let setFilePrefix = (val) => {
   filePrefix = val ? val.toString[0] : filePrefix;
@@ -117,37 +52,52 @@ program
   .option("-d, --dir-prefix <prefix_letter>", "Set a prifix letter for directory entries", setDirPrefix)
   .parse(process.argv);
 
-let _rootDirPath = process.argv[2];
-compareMode = (program.compare ? true : false);
-singleListing = (program.separateListings ? false : true);
+const logger = new Logger(program.verbose);
+const _rootDirPath = process.argv[2];
+
+if (program.compare) {
+  if (program.separateListings) {
+    mode = Modes.COMPARE_SINGLE;
+  } else {
+    mode = Modes.COMPARE_DEFAULT;
+  }
+} else {
+  if (program.separateListings) {
+    mode = Modes.CREATE_SINGLE;
+  } else {
+    mode = Modes.CREATE_DEFAULT;
+  }
+}
+
+if (program.prettyOutput) {
+  tabWidth = TAB_WIDTH;
+}
 
 if (!_rootDirPath) {
-  _printMessage(null, "Missing argument");
+  logger.log("Missing argument");
 } else {
   fs.stat(_rootDirPath, (err, stats) => {
     if (!stats || !stats.isDirectory()) {
-      _printMessage(null, "<directory path> has to point to a valid directory");
+      logger.printMessage(null, "<directory path> has to point to a valid directory" + _rootDirPath);
     } else {
-      _processDirectory(_rootDirPath);
-      if (program.prettyOutput) {
-        tabWidth = TAB_WIDTH;
-      }
-      if (singleListing) {
-        if (compareMode) {
+      let dirProcessor = new DirProcessor(dirPrefix, filePrefix, otherPrefix);
+      dirProcessor.mode = mode;
+      dirProcessor.process(_rootDirPath, mode);
+      if (mode === Modes.COMPARE_SINGLE || mode === Modes.CREATE_SINGLE) {
+        if (mode === Modes.COMPARE_SINGLE || mode === Modes.COMPARE_DEFAULT) {
           readPrevList(listFileName)
             .then((prevList) => {
-              Logger.log(
-                JSON.stringify(compareListings(prevList, cumulativeListing),
-                  null, TAB_WIDTH));
+              logger.log(
+                JSON.stringify(compareListings(prevList, dirProcessor.cumulativeListing), null, tabWidth));
             })
-            .catch(Logger.log);
+            .catch(logger.log);
         } else {
-          fs.writeFile(listFileName, JSON.stringify(cumulativeListing, null, tabWidth), 
+          fs.writeFile(listFileName, JSON.stringify(dirProcessor.cumulativeListing, null, tabWidth), 
             (err) => {
               if (err) {
-                _printMessage(_rootDirPath, err);
+                logger.printMessage(_rootDirPath, err);
               } else {
-                _printMessage(null, "Single listing is done!");
+                logger.printMessage(null, "Single listing is done!");
               }
             });
         }
