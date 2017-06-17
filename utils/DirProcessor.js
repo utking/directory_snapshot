@@ -6,7 +6,12 @@ const listingRegex = new RegExp(listFileName);
 const Utils = require(__dirname+"/directoryDiff");
 const Modes = require(__dirname+"/modes");
 const Logger = require(__dirname+"/Logger");
-const readPrevList = require(__dirname+"/readPrevList");
+const TAB_WIDTH = 2;
+
+let compareListings = (prevList, curList) => {
+  return Utils.findDirectoriesDiff(prevList, curList);
+};
+
 
 class DirProcessor {
   constructor(dirPrefix, filePrefix, otherPrefix) {
@@ -16,6 +21,7 @@ class DirProcessor {
     this._mode = Modes.COMPARE_DEFAULT;
     this._logger = new Logger();
     this._cumulativeListing = {};
+    this._rootDir = null;
   }
 
   get cumulativeListing() {
@@ -30,11 +36,23 @@ class DirProcessor {
     return this._mode;
   }
 
+  set rootDir(val) {
+    this._rootDir = val.toString();
+  }
+
+  get rootDir() {
+    return this._rootDir;
+  }
+
   _compareListings(prevList, curList) {
     return Utils.findDirectoriesDiff(prevList, curList);
   }
 
-  process(dirPath) {
+  process() {
+    this._process(this.rootDir);
+  }
+
+  _process(dirPath) {
     let files = [];
     try {
       files = fs.readdirSync(dirPath);
@@ -53,7 +71,7 @@ class DirProcessor {
           isDir = isDirectory.sync(newPath);
         } catch (ex) { }
         if (isDir) {
-          this.process(newPath);
+          this._process(newPath);
         }
         try {
           return isDir ? `${this._dirPrefix}:${f}` : `${this._filePrefix}:${f}`;
@@ -61,6 +79,7 @@ class DirProcessor {
           return `${this._otherPrefix}:${f}`;
         }
       }).filter((f) => { return f && f.length; }).sort();
+
       if (this.mode === Modes.COMPARE_SINGLE || this.mode === Modes.CREATE_SINGLE) {
         this._cumulativeListing[dirPath] = filesList;
       } else {
@@ -68,7 +87,7 @@ class DirProcessor {
           dirPath : filesList
         };
         if (this.mode === Modes.COMPARE_DEFAULT) {
-          readPrevList(path.join(dirPath, listFileName))
+          this.readPrevList(path.join(dirPath, listFileName))
             .then((prevList) => {
               let result = this._compareListings(prevList, curListingObject);
               if (result.fileDiff && result.fileDiff[dirPath]) {
@@ -90,7 +109,48 @@ class DirProcessor {
         }
       }
     }
-  };
+
+    if (this.mode === Modes.COMPARE_SINGLE) {
+      this.readPrevList(listFileName)
+        .then((prevList) => {
+          this._logger.log(
+            JSON.stringify(compareListings(prevList, this.cumulativeListing), null, TAB_WIDTH));
+        })
+        .catch(this._logger.log);
+    } else if (this.mode === Modes.CREATE_SINGLE) {
+      fs.writeFile(listFileName, JSON.stringify(this.cumulativeListing, null, TAB_WIDTH), 
+        (err) => {
+          if (err) {
+            this._logger.printMessage(this.rootDir, err);
+          } else {
+            this._logger.printMessage(null, "Single listing is done!");
+          }
+        });
+    }
+  }
+
+  readPrevList(fileName) {
+    return new Promise((resolve, reject) => {
+      if (!fileName) {
+        reject(Error("Filename should not be empty"));
+        return;
+      }
+      fs.stat(fileName, (err, stats) => {
+        if (!stats || !stats.isFile()) {
+          reject(Error(`File ${fileName} does not exist or is not a listing file`));
+          return;
+        }
+        let result = {};
+        try {
+          result = fs.readFileSync(fileName);
+          resolve(JSON.parse(result));
+        } catch (e) {
+          reject (e);
+        }
+      });
+    });
+  }
+
 }
 
 module.exports = DirProcessor;
