@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const isDirectory = require("is-directory");
 const listFileName = "dir.lst";
-const TAB_WIDTH = 2;
 const listingRegex = new RegExp(listFileName);
 const Utils = require(__dirname+"/directoryDiff");
 const Modes = require(__dirname+"/modes");
 const Logger = require(__dirname+"/Logger");
+const readPrevList = require(__dirname+"/readPrevList");
 
 class DirProcessor {
   constructor(dirPrefix, filePrefix, otherPrefix) {
@@ -74,6 +74,8 @@ class DirProcessor {
               if (result.fileDiff && result.fileDiff[dirPath]) {
                 Logger.log(result.fileDiff);
               }
+            }, (err) => {
+              this._logger.printMessage(dirPath, err);
             })
             .catch(Logger.log);
         } else {

@@ -20,7 +20,6 @@ let listingRegex = new RegExp(listFileName);
 let filePrefix = "F";
 let dirPrefix = "D";
 let otherPrefix = "X";
-let tabWidth = null;
 let mode = Modes.CREATE_DEFAULT;
 
 
@@ -41,13 +40,12 @@ let compareListings = (prevList, curList) => {
 };
 
 program
-  .version("1.0.3")
+  .version("1.0.4")
   .usage("<directory_path> [options]")
   .option("-c, --compare", "Compare with the previous state")
   .option("-l, --listing-name <file_name>", "Set a listing file name", setListingName)
   .option("-s, --separate-listings", "Create a listing file for each directory")
   .option("-v, --verbose", "Verbose mode")
-  .option("-p, --pretty-output", "Pretty JOSN output for listings")
   .option("-f, --file-prefix <prefix_letter>", "Set a prifix letter for file entries", setFilePrefix)
   .option("-d, --dir-prefix <prefix_letter>", "Set a prifix letter for directory entries", setDirPrefix)
   .parse(process.argv);
@@ -69,10 +67,6 @@ if (program.compare) {
   }
 }
 
-if (program.prettyOutput) {
-  tabWidth = TAB_WIDTH;
-}
-
 if (!_rootDirPath) {
   logger.log("Missing argument");
 } else {
@@ -88,11 +82,11 @@ if (!_rootDirPath) {
           readPrevList(listFileName)
             .then((prevList) => {
               logger.log(
-                JSON.stringify(compareListings(prevList, dirProcessor.cumulativeListing), null, tabWidth));
+                JSON.stringify(compareListings(prevList, dirProcessor.cumulativeListing), null, TAB_WIDTH));
             })
             .catch(logger.log);
         } else {
-          fs.writeFile(listFileName, JSON.stringify(dirProcessor.cumulativeListing, null, tabWidth), 
+          fs.writeFile(listFileName, JSON.stringify(dirProcessor.cumulativeListing, null, TAB_WIDTH), 
             (err) => {
               if (err) {
                 logger.printMessage(_rootDirPath, err);
